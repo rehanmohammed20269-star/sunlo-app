@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin 💙</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI';
+      display: flex;
+      height: 100vh;
+      background: #f8fafc;
+    }
+
+    #sidebar {
+      width: 30%;
+      background: #eef2ff;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .user {
+      padding: 10px;
+      margin: 5px;
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .user:hover {
+      background: #dbeafe;
+    }
+
+    #chatArea {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #4a6cf7;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      max-width: 70%;
+    }
+
+    .me {
+      background: #4a6cf7;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .other {
+      background: #ddd;
+      align-self: flex-start;
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 5px;
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background: white;
+      gap: 5px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="sidebar">
+  <h3>👥 Users</h3>
+  <ul id="users"></ul>
+</div>
+
+<div id="chatArea">
+  <header>💙 Admin Panel</header>
+
+  <div id="chat"></div>
+
+  <div id="inputArea">
+    <input id="msg" placeholder="Reply...">
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+  var socket = io();
+  var adminId = "admin123";
+
+  socket.emit("join", adminId);
+
+  let currentUser = "";
+  let chats = {};
+
+  socket.on("user list", function(list){
+    let ul = document.getElementById("users");
+    ul.innerHTML = "";
+
+    list.forEach(id => {
+      if(id === adminId) return;
+
+      let li = document.createElement("li");
+      li.classList.add("user");
+      li.textContent = id;
+
+      li.onclick = () => {
+        currentUser = id;
+        document.getElementById("chat").innerHTML = "";
+
+        if(chats[id]){
+          chats[id].forEach(msg => {
+            renderMsg(msg);
+          });
+        }
+      };
+
+      ul.appendChild(li);
+    });
+  });
+
+  function renderMsg(data){
+    let div = document.createElement("div");
+    div.classList.add("msg", data.type);
+
+    let name = document.createElement("b");
+    name.innerText = data.name + ": ";
+    div.appendChild(name);
+
+    if(data.msg){
+      let text = document.createElement("span");
+      text.innerText = data.msg;
+      div.appendChild(text);
+    }
+
+    if(data.image){
+      let img = document.createElement("img");
+      img.src = data.image;
+      div.appendChild(img);
+    }
+
+    document.getElementById("chat").appendChild(div);
+  }
+
+  socket.on("private message", function(data){
+
+    let user = (data.from === adminId) ? data.to : data.from;
+
+    if(!chats[user]) chats[user] = [];
+
+    let type = (data.from === adminId) ? "me" : "other";
+
+    chats[user].push({
+      name: data.name || "User",
+      msg: data.msg,
+      image: data.image,
+      type: type
+    });
+
+    if(user === currentUser){
+      renderMsg(chats[user][chats[user].length - 1]);
+    }
+  });
+
+  function send(){
+    if(!currentUser){
+      alert("User select karo");
+      return;
+    }
+
+    let msg = document.getElementById("msg").value;
+
+    let data = {
+      from: adminId,
+      to: currentUser,
+      name: "Admin",
+      msg: msg
+    };
+
+    socket.emit("private message", data);
+
+    document.getElementById("msg").value = "";
+  }
+</script>
+
+</body>
+</html>
