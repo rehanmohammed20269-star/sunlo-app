@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>💙 SunLo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI';
+      background: linear-gradient(to bottom, #eef2ff, #f8fafc);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #4a6cf7;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+
+    #chatBox {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      max-width: 70%;
+    }
+
+    .me {
+      background: #4a6cf7;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .other {
+      background: #ddd;
+      align-self: flex-start;
+    }
+
+    img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 5px;
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      background: white;
+      gap: 5px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>💙 SunLo - Tum akela nahi ho</header>
+
+<div id="chatBox"></div>
+
+<div id="inputArea">
+  <input id="name" placeholder="Your name">
+  <input id="input" placeholder="Apni baat likho...">
+  <input type="file" id="image">
+  <button onclick="send()">Send</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+  var socket = io();
+  var myId = Math.random().toString(36).substr(2,5);
+  var adminId = "admin123";
+
+  socket.emit("join", myId);
+
+  function addMsg(data, type){
+    let div = document.createElement("div");
+    div.classList.add("msg", type);
+
+    let name = document.createElement("b");
+    name.innerText = data.name + ": ";
+    div.appendChild(name);
+
+    if(data.msg){
+      let text = document.createElement("span");
+      text.innerText = data.msg;
+      div.appendChild(text);
+    }
+
+    if(data.image){
+      let img = document.createElement("img");
+      img.src = data.image;
+      div.appendChild(img);
+    }
+
+    document.getElementById("chatBox").appendChild(div);
+  }
+
+  function send(){
+    let input = document.getElementById("input");
+    let name = document.getElementById("name").value || "User";
+    let file = document.getElementById("image").files[0];
+
+    let reader = new FileReader();
+
+    reader.onload = function(){
+      let data = {
+        from: myId,
+        to: adminId,
+        name: name,
+        msg: input.value,
+        image: reader.result || null
+      };
+
+      addMsg(data, "me");
+
+      socket.emit("private message", data);
+    };
+
+    if(file){
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload();
+    }
+
+    input.value = "";
+    document.getElementById("image").value = "";
+
+    setTimeout(()=>{
+      addMsg({name:"Support", msg:"💙 Main yaha hoon..."}, "other");
+    }, 1000);
+  }
+
+  socket.on("private message", function(data){
+    if(data.from !== myId){
+      addMsg(data, "other");
+    }
+  });
+</script>
+
+</body>
+</html>
