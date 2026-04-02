@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>💙 SunLo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { margin:0; font-family:sans-serif; background:#eef2ff; }
+    header { background:#4a6cf7; color:white; padding:15px; text-align:center; }
+    #chatBox { height:60vh; overflow-y:auto; padding:10px; }
+    .msg { margin:5px; padding:10px; border-radius:10px; max-width:70%; }
+    .me { background:#4a6cf7; color:white; margin-left:auto; }
+    .other { background:#ddd; }
+  </style>
+</head>
+
+<body>
+
+<header>💙 SunLo</header>
+
+<div style="padding:10px;">
+  <input id="name" placeholder="Your name">
+  <button onclick="start()">Start Chat</button>
+</div>
+
+<div id="chatBox"></div>
+
+<div style="display:flex; padding:10px;">
+  <input id="input" placeholder="Message">
+  <input type="file" id="img">
+  <button onclick="send()">Send</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+let socket = io();
+let myId = Math.random().toString(36).substr(2,5);
+let myName = "";
+let adminId = "admin123";
+
+function start(){
+  myName = document.getElementById("name").value;
+  socket.emit("join", {id: myId, name: myName});
+}
+
+function addMsg(text, type){
+  let div = document.createElement("div");
+  div.className = "msg " + type;
+  div.innerHTML = text;
+  document.getElementById("chatBox").appendChild(div);
+}
+
+function send(){
+  let text = document.getElementById("input").value;
+  let file = document.getElementById("img").files[0];
+
+  if(file){
+    let reader = new FileReader();
+    reader.onload = function(){
+      socket.emit("private message", {
+        from: myId,
+        to: adminId,
+        name: myName,
+        img: reader.result
+      });
+      addMsg("<img src='"+reader.result+"' width='150'>","me");
+    }
+    reader.readAsDataURL(file);
+  } else {
+    socket.emit("private message", {
+      from: myId,
+      to: adminId,
+      name: myName,
+      msg: text
+    });
+    addMsg(myName + ": " + text,"me");
+  }
+
+  document.getElementById("input").value = "";
+}
+</script>
+
+</body>
+</html>
