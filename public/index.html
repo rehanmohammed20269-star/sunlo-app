@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>💙 SunLo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI';
+      background: linear-gradient(135deg,#eef2ff,#c7d2fe);
+    }
+
+    header {
+      background: #4a6cf7;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    #startBox {
+      text-align: center;
+      padding: 20px;
+    }
+
+    #startBox input {
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+      width: 60%;
+    }
+
+    #startBox button {
+      padding: 10px 20px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+      border-radius: 20px;
+      margin-top: 10px;
+    }
+
+    #chatBox {
+      height: 55vh;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .msg {
+      margin: 6px;
+      padding: 10px;
+      border-radius: 12px;
+      max-width: 70%;
+    }
+
+    .me {
+      background: #4a6cf7;
+      color: white;
+      align-self: flex-end;
+    }
+
+    .other {
+      background: white;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    #inputArea {
+      display: flex;
+      padding: 10px;
+      gap: 5px;
+    }
+
+    #inputArea input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: none;
+    }
+
+    button {
+      border-radius: 20px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+      padding: 10px;
+    }
+
+    img {
+      max-width: 150px;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>💙 SunLo - Tum akela nahi ho</header>
+
+<div id="startBox">
+  <input id="name" placeholder="Apna naam likho..."><br>
+  <button onclick="start()">Start Chat</button>
+</div>
+
+<div id="chatBox"></div>
+
+<div id="inputArea">
+  <input id="input" placeholder="Apni baat likho...">
+  <input type="file" id="img">
+  <button onclick="send()">➤</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+let socket = io();
+let myId = Math.random().toString(36).substr(2,5);
+let myName = "";
+let adminId = "admin123";
+
+function start(){
+  myName = document.getElementById("name").value;
+
+  if(myName === ""){
+    alert("Naam likho");
+    return;
+  }
+
+  socket.emit("join", {id: myId, name: myName});
+  document.getElementById("startBox").style.display = "none";
+}
+
+function addMsg(content, type){
+  let div = document.createElement("div");
+  div.className = "msg " + type;
+  div.innerHTML = content;
+  document.getElementById("chatBox").appendChild(div);
+}
+
+function send(){
+  let text = document.getElementById("input").value;
+  let file = document.getElementById("img").files[0];
+
+  if(file){
+    let reader = new FileReader();
+    reader.onload = function(){
+      socket.emit("private message", {
+        from: myId,
+        to: adminId,
+        msg: "",
+        img: reader.result
+      });
+      addMsg("<img src='"+reader.result+"'>","me");
+    }
+    reader.readAsDataURL(file);
+  } else {
+    socket.emit("private message", {
+      from: myId,
+      to: adminId,
+      msg: text
+    });
+    addMsg(text,"me");
+  }
+
+  document.getElementById("input").value="";
+}
+
+socket.on("private message",(data)=>{
+  if(data.msg){
+    addMsg("Support: " + data.msg,"other");
+  }
+  if(data.img){
+    addMsg("<img src='"+data.img+"'>","other");
+  }
+});
+</script>
+
+</body>
+</html>
