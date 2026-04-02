@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin 💙</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { display:flex; margin:0; font-family:sans-serif; }
+    #users { width:30%; background:#1e293b; color:white; padding:10px; }
+    .user { padding:10px; background:#334155; margin:5px; cursor:pointer; }
+    #chat { flex:1; display:flex; flex-direction:column; }
+    #chatBox { flex:1; padding:10px; overflow-y:auto; }
+    .msg { margin:5px; padding:10px; border-radius:10px; }
+    .me { background:#4a6cf7; color:white; margin-left:auto; }
+    .other { background:#ddd; }
+  </style>
+</head>
+
+<body>
+
+<audio id="notifySound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+<div id="users"></div>
+
+<div id="chat">
+  <div id="chatBox"></div>
+
+  <div style="display:flex;">
+    <input id="input">
+    <input type="file" id="img">
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+let socket = io();
+let adminId = "admin123";
+let currentUser = "";
+let users = {};
+
+socket.emit("join", {id: adminId, name:"Admin"});
+
+socket.on("user list", (list)=>{
+  users = list;
+  let div = document.getElementById("users");
+  div.innerHTML = "";
+
+  for(let id in users){
+    if(id === adminId) continue;
+
+    let u = document.createElement("div");
+    u.className="user";
+    u.innerText = users[id].name;
+
+    u.onclick = ()=>{
+      currentUser = id;
+      document.getElementById("chatBox").innerHTML="";
+    };
+
+    div.appendChild(u);
+  }
+});
+
+function addMsg(text,type){
+  let div=document.createElement("div");
+  div.className="msg "+type;
+  div.innerHTML=text;
+  document.getElementById("chatBox").appendChild(div);
+}
+
+function send(){
+  let text=document.getElementById("input").value;
+  let file=document.getElementById("img").files[0];
+
+  if(!currentUser) return alert("Select user");
+
+  if(file){
+    let reader=new FileReader();
+    reader.onload=function(){
+      socket.emit("private message",{
+        from:adminId,
+        to:currentUser,
+        img:reader.result
+      });
+      addMsg("<img src='"+reader.result+"' width='150'>","me");
+    }
+    reader.readAsDataURL(file);
+  } else {
+    socket.emit("private message",{
+      from:adminId,
+      to:currentUser,
+      msg:text
+    });
+    addMsg(text,"me");
+  }
+
+  document.getElementById("input").value="";
+}
+
+socket.on("private message",(data)=>{
+
+  let sound = document.getElementById("notifySound");
+
+  if(data.from !== adminId){
+    sound.play();
+  }
+
+  if(data.msg){
+    addMsg(data.msg,"other");
+  }
+
+  if(data.img){
+    addMsg("<img src='"+data.img+"' width='150'>","other");
+  }
+
+});
+</script>
+
+</body>
+</html>
