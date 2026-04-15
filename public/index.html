@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SunLo 💙</title>
+  <script src="/socket.io/socket.io.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #f5f7fb;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #chat {
+      height: 300px;
+      overflow-y: auto;
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    input {
+      padding: 10px;
+      width: 70%;
+    }
+
+    button {
+      padding: 10px;
+      border: none;
+      background: #4a6cf7;
+      color: white;
+      border-radius: 5px;
+      margin: 5px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>💙 SunLo - Tum akela nahi ho</h2>
+
+<div id="chat"></div>
+
+<input id="msg" placeholder="Type message..." />
+<button onclick="sendMsg()">Send</button>
+
+<!-- 🔔 SOUND -->
+<audio id="sound" src="notification.mp3"></audio>
+
+<script>
+const socket = io();
+
+// 🔔 sound
+function playSound(){
+  const s = document.getElementById("sound");
+  s.currentTime = 0;
+  s.play().catch(()=>{});
+}
+
+// 🔓 enable sound
+document.body.addEventListener("click", ()=>{
+  playSound();
+},{once:true});
+
+// 📤 send
+function sendMsg(){
+  let msg = document.getElementById("msg").value;
+
+  socket.emit("userMessage", msg);
+
+  document.getElementById("chat").innerHTML += "<p><b>You:</b> "+msg+"</p>";
+  document.getElementById("msg").value="";
+}
+
+// 📥 receive
+socket.on("adminReply", (msg)=>{
+  document.getElementById("chat").innerHTML += "<p><b>Support:</b> "+msg+"</p>";
+  playSound();
+});
+</script>
+
+</body>
+</html>
